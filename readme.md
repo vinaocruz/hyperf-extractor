@@ -1,6 +1,6 @@
 # Hyperf Extractor
 
-Este código apresenta uma extensão do (desafio técnico escrito em Go)[https://github.com/vinaocruz/go-extractor], para importar milhões de registros no banco de dados apartir de arquivos txt. 
+Este código apresenta uma extensão do [desafio técnico escrito em Go](https://github.com/vinaocruz/go-extractor), para importar milhões de registros no banco de dados a partir de arquivos txt. 
 
 A ideia de reescrever utilizando php + hyperf é avaliar o comportamento de ambos cenários.
 
@@ -26,6 +26,9 @@ docker-compose up -d
 
 A base de dados será populada com os arquivos estáticos localizado na pasta `storage/example/` contendo +63M de registros. Para executar a importação do histórico de negociações da B3 dos últimos 7 dias, utilize:
 
+```
+docker exec -it hyperf-extractor php bin/hyperf.php app:dataImport
+```
 
 ### Estratégia de otimização
 
