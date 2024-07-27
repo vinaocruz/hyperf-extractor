@@ -13,6 +13,7 @@ services:
     environment:
       - APP_ENV=dev
       - SCAN_CACHEABLE=false
+      - TIMEZONE=America/Bahia
   db:
     container_name: hyperf-db
     image: postgres
