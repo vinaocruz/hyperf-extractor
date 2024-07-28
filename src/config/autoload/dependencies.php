@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Service\FileReaderService;
-use Domain\Service\ReaderServiceInterface;
-
 /**
  * This file is part of Hyperf.
  *
@@ -14,5 +11,6 @@ use Domain\Service\ReaderServiceInterface;
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 return [
-    ReaderServiceInterface::class => FileReaderService::class
+    App\Domain\Service\ReaderServiceInterface::class => App\Service\FileReaderService::class,
+    App\Domain\Repository\NegotiationRepository::class => App\Repository\PostgresNegotiationRepository::class,
 ];
