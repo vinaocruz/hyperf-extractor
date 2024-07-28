@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use Domain\Service\ReaderServiceInterface;
+use App\Model\Negotiation;
+use App\Domain\Repository\NegotiationRepository;
+use App\Domain\Service\ReaderServiceInterface;
 use Hyperf\Command\Command as HyperfCommand;
 use Hyperf\Command\Annotation\Command;
+use Hyperf\Coroutine\Coroutine;
 use Hyperf\Coroutine\Parallel;
-use Hyperf\Di\Annotation\Inject;
+use Hyperf\Coroutine\WaitGroup;
 use Psr\Container\ContainerInterface;
 use Swoole\Coroutine\Channel;
 use Symfony\Component\Stopwatch\Stopwatch;
@@ -19,12 +22,13 @@ use function Hyperf\Coroutine\go;
 #[Command]
 class dataImport extends HyperfCommand
 {
+    private const BATCH_SIZE = 200000;
 
-    #[Inject]
-    private ReaderServiceInterface $readerService;
-
-    public function __construct(protected ContainerInterface $container)
-    {
+    public function __construct(
+        protected ContainerInterface $container,
+        private ReaderServiceInterface $readerService,
+        private NegotiationRepository $negotiationRepository
+    ) {
         parent::__construct('app:dataImport');
     }
 
@@ -44,7 +48,7 @@ class dataImport extends HyperfCommand
         $filesFolder = __DIR__.'/../../storage/example';
 
         $this->extract($filesFolder);
-        
+
         $unzipedFiles = glob($filesFolder . '/*.txt');
         
         $parallel = new Parallel();
@@ -57,20 +61,56 @@ class dataImport extends HyperfCommand
             });
         }
 
-        go(function() use ($batchCh) {
+        go(function() use ($batchCh, $stopWatch) {
+            $bulkImport = [];
+            $countBulk = $id = 0;
+            $wg = new WaitGroup();
+
             while($data = $batchCh->pop()) {
-                //TODO bulk import to database
-                $this->line($data, 'info');
+                $bulkImport[] = ++$id . ';' . $data;
+                $countBulk++;
+
+                if ($countBulk == self::BATCH_SIZE) {
+                    $wg->add(1);
+                    go(function() use ($bulkImport, &$wg) {
+                        $this->bulkImport($bulkImport, Coroutine::id());
+                        $wg->done();
+                    });
+
+                    $countBulk = 0;
+                    unset($bulkImport);
+                    $bulkImport = [];
+                }
             }
+
+            if ($countBulk > 0) {
+                $wg->add(1);
+                go(function() use ($bulkImport, &$wg) {
+                    $this->bulkImport($bulkImport, Coroutine::id());
+                    $wg->done();
+                });
+            }
+
+            $wg->wait();
+
+            $event = $stopWatch->stop('dataImport');
+            $this->line(sprintf('Finished! Time: %.2f ms', $event->getDuration()), 'success');
         });
 
         $parallel->wait();
         $batchCh->close();
+    }
 
-        //TODO create index
+    private function bulkImport(array $bulkImport, int $cid): void
+    {
+        $bulkImportTime = new Stopwatch();
+        $bulkImportTime->start('bulkImport');
 
-        $event = $stopWatch->stop('dataImport');
-        $this->line(sprintf('Finished! Time: %.2f ms', $event->getDuration()), 'success');
+        $this->negotiationRepository->bulkImport($bulkImport);
+        // Negotiation::insert($bulkImport);
+
+        $eventBulk = $bulkImportTime->stop('bulkImport');
+        $this->line(sprintf('Inserted %d rows in %.2f ms (CID: %d)', self::BATCH_SIZE, $eventBulk->getDuration(), $cid), 'info');
     }
 
     private function extract(string $filesFolder) {
