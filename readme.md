@@ -32,7 +32,13 @@ docker exec -it hyperf-extractor php bin/hyperf.php app:dataImport
 
 ### Estratégia de otimização
 
-TODO
+Para otimizar a importação da massa de dados, foram utilizadas as seguintes estratégias:
+
+* Leitura do arquivo por linha, evitando carregá-lo todo em memória
+* Coroutine para ler os arquivos em concorrência
+* Channel para enviar lotes de dados lidos e prontos para inserção no banco
+* Tabela inicializada sem índices
+* Inserção em lote no banco com COPY FROM
 
 ### Estratégia de modelagem do banco
 
