@@ -16,7 +16,6 @@
         "hyperf/cache": "~3.1.0",
         "hyperf/command": "^3.1",
         "hyperf/config": "~3.1.0",
-        "hyperf/db-connection": "~3.1.0",
         "hyperf/engine": "^2.10",
         "hyperf/filesystem": "^3.1",
         "hyperf/framework": "~3.1.0",
@@ -45,8 +44,7 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "app/",
-            "Domain\\": "domain/"
+            "App\\": "app/"
         },
         "files": []
     },

@@ -8,10 +8,11 @@ services:
     volumes:
       - ./:/opt/www
       - ./../storage/:/opt/www/storage
+      - /opt/www/vendor
     ports:
       - 9501:9501
     environment:
-      - APP_ENV=dev
+      - APP_ENV=prod
       - SCAN_CACHEABLE=false
       - TIMEZONE=America/Bahia
   db:

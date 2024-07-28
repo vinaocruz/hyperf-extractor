@@ -48,8 +48,11 @@ WORKDIR /opt/www
 # COPY ./composer.* /opt/www/
 # RUN composer install --no-dev --no-scripts
 
+RUN apk add php83-pgsql
+
 COPY . /opt/www
-RUN composer install --no-dev -o && php bin/hyperf.php
+RUN composer install --no-dev -o
+RUN php bin/hyperf.php
 
 EXPOSE 9501
 
